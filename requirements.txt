@@ -1,0 +1,8 @@
+streamlit
+pandas
+plotly
+prophet
+anthropic
+python-dotenv
+openpyxl
+scikit-learn
