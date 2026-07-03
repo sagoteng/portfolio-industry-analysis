@@ -22,8 +22,11 @@ data['order_date'] = pd.to_datetime(data['order_date'])
 
 # Sidebar filters
 st.sidebar.header("Filtres")
-start = st.sidebar.date_input("Date de début", value=data['order_date'].min())
-end = st.sidebar.date_input("Date de fin", value=data['order_date'].max())
+last_year = data['order_date'].dt.year.max()
+default_start = pd.Timestamp(f"{last_year}-01-01")
+default_end = data['order_date'].max()
+start = st.sidebar.date_input("Date de début", value=default_start)
+end = st.sidebar.date_input("Date de fin", value=default_end)
 selected_families = st.sidebar.multiselect("Famille de produits", options=data['product_family'].unique(), default=data['product_family'].unique())
 selected_clients = st.sidebar.multiselect("Client", options=data['client_name'].unique(), default=data['client_name'].unique())
 
