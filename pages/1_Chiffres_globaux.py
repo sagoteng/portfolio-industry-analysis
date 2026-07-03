@@ -14,21 +14,13 @@ client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 # Page config
 st.set_page_config(page_title='Analyse Industrielle', layout='wide')
 
-# File uploader
-uploaded_file = st.sidebar.file_uploader("Charger vos données (CSV ou Excel)", type=["csv", "xlsx"])
-if uploaded_file is not None:
-    if uploaded_file.name.endswith('.xlsx'):
-        st.session_state['data'] = pd.read_excel(uploaded_file)
-    else:
-        st.session_state['data'] = pd.read_csv(uploaded_file)
-else:
-    if 'data' not in st.session_state:
-        st.session_state['data'] = pd.read_csv("dataset_industry.csv")
+# Data loading
+if 'data' not in st.session_state:
+    st.session_state['data'] = pd.read_csv("dataset_industry.csv")
 data = st.session_state['data']
 data['order_date'] = pd.to_datetime(data['order_date'])
 
 # Sidebar filters
-st.sidebar.markdown("---")
 st.sidebar.header("Filtres")
 start = st.sidebar.date_input("Date de début", value=data['order_date'].min())
 end = st.sidebar.date_input("Date de fin", value=data['order_date'].max())
