@@ -70,6 +70,10 @@ total_clients = filtered_data['client_name'].nunique()
 top_client = filtered_data.groupby('client_name')['revenue'].sum().idxmax()
 top_client_share = (filtered_data.groupby('client_name')['revenue'].sum().max() / total_revenue * 100)
 best_family = filtered_data.groupby('product_family')['revenue'].sum().idxmax()
+total_margin = filtered_data['margin'].sum()
+avg_margin_rate = filtered_data['margin_rate'].mean()
+prev_margin = prev_data['margin'].sum() if len(prev_data) > 0 else 0
+delta_margin = total_margin - prev_margin
 
 # Deltas
 prev_revenue = prev_data['revenue'].sum()
@@ -83,6 +87,11 @@ delta_orders = total_orders - prev_orders
 delta_otd = otd_rate - prev_otd
 delta_nc = non_conformity_rate - prev_nc
 delta_avg_order = avg_order_value - prev_avg_order
+prev_avg_margin_rate = prev_data['margin_rate'].mean() if len(prev_data) > 0 else 0
+prev_clients = prev_data['client_name'].nunique() if len(prev_data) > 0 else 0
+
+delta_margin_rate = avg_margin_rate - prev_avg_margin_rate
+delta_clients = total_clients - prev_clients
 
 # CA par mois
 revenue_by_month = filtered_data.groupby(filtered_data['order_date'].dt.to_period('M'))['revenue'].sum().reset_index()
@@ -149,6 +158,13 @@ col3.metric("Valeur moy. commande", f"{avg_order_value:,.2f} €", delta=f"{delt
 col4.metric("Taux OTD", f"{otd_rate:.1f}%", delta=f"{delta_otd:.1f}%")
 col5.metric("Taux non-conformité", f"{non_conformity_rate:.1f}%", delta=f"{delta_nc:.1f}%", delta_color="inverse")
 
+#KPIs row 2
+st.markdown("---")
+col1, col2, col3 = st.columns(3)
+col1.metric("Marge totale", f"{total_margin:,.2f} €", delta=f"{delta_margin:,.2f} €")
+col2.metric("Taux de marge moyen", f"{avg_margin_rate:.1f}%", delta=f"{delta_margin_rate:.1f}%")
+col3.metric("Nb clients actifs", f"{total_clients}", delta=f"{delta_clients:+.0f}")
+
 # Charts
 st.markdown("---")
 col1, col2 = st.columns(2)
@@ -197,3 +213,9 @@ with col2:
         st.error(f"⚠️ Baisse du CA vs période précédente : {delta_revenue:,.2f} €")
     else:
         st.success(f"✅ CA en hausse vs période précédente : +{delta_revenue:,.2f} €")
+    if avg_margin_rate < 15:
+        st.error(f"⚠️ Taux de marge insuffisant : {avg_margin_rate:.1f}% (objectif marché : 15-25%)")
+    elif avg_margin_rate < 20:
+        st.warning(f"⚠️ Taux de marge en dessous de la moyenne du secteur : {avg_margin_rate:.1f}% (objectif : 20-25%)")
+    else:
+        st.success(f"✅ Taux de marge dans les objectifs du secteur : {avg_margin_rate:.1f}%")

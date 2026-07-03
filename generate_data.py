@@ -51,6 +51,13 @@ price_ranges = {
     'Chaudronnerie': (200.0, 2000.0),
 }
 
+cost_ranges = {
+    'Découpage': (0.3, 3.5),
+    'Emboutissage': (0.7, 7.0),
+    'Tôlerie': (35.0, 350.0),
+    'Chaudronnerie': (140.0, 1400.0),
+}
+
 # Generate data
 np.random.seed(42)
 
@@ -70,7 +77,15 @@ unit_prices = np.array([
     for pf in product_families_col
 ])
 
+unit_costs = np.array([
+    round(np.random.uniform(*cost_ranges[pf]), 2)
+    for pf in product_families_col
+])
+
 revenues = np.round(quantities * unit_prices, 2)
+
+margins = np.round(revenues - (quantities * unit_costs), 2)
+margin_rates = np.round((margins / revenues) * 100, 2)
 
 on_time = np.random.choice(['Yes', 'No'], n, p=[0.85, 0.15])
 non_conformity = np.random.choice(['Yes', 'No'], n, p=[0.05, 0.95])
@@ -86,6 +101,9 @@ data = {
     'revenue': revenues,
     'on_time': on_time,
     'non_conformity': non_conformity,
+    'unit_cost': unit_costs,
+    'margin': margins,
+    'margin_rate': margin_rates,
 }
 
 df = pd.DataFrame(data)
