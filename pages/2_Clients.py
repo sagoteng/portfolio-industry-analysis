@@ -50,6 +50,26 @@ avg_revenue_per_client = client_summary['revenue'].mean()
 top_client = client_summary.iloc[0]['client_name']
 top_client_share = (client_summary.iloc[0]['revenue'] / client_summary['revenue'].sum() * 100)
 
+# Calcul période précédente
+period_duration = (pd.Timestamp(end) - pd.Timestamp(start)).days
+prev_start = pd.Timestamp(start) - pd.Timedelta(days=period_duration)
+prev_end = pd.Timestamp(start) - pd.Timedelta(days=1)
+
+prev_data = data[
+    (data['order_date'] >= prev_start) &
+    (data['order_date'] <= prev_end) &
+    (data['product_family'].isin(selected_families)) &
+    (data['client_name'].isin(selected_clients))
+]
+
+prev_total_clients = prev_data['client_name'].nunique()
+prev_avg_revenue = prev_data.groupby('client_name')['revenue'].sum().mean() if len(prev_data) > 0 else 0
+prev_top_client_share = (prev_data.groupby('client_name')['revenue'].sum().max() / prev_data['revenue'].sum() * 100) if len(prev_data) > 0 else 0
+
+delta_clients = total_clients - prev_total_clients
+delta_avg_revenue = avg_revenue_per_client - prev_avg_revenue
+delta_top_share = top_client_share - prev_top_client_share
+
 # AI system prompt
 system_prompt = f"""Tu es un analyste commercial s'adressant à la direction d'une TPE/PME. Ton ton est professionnel et orienté action.
 
@@ -97,10 +117,10 @@ st.title('Analyse Clients')
 
 # Global client KPIs
 col1, col2, col3, col4 = st.columns(4)
-col1.metric("Nombre de clients", f"{total_clients}")
-col2.metric("CA moyen par client", f"{avg_revenue_per_client:,.2f} €")
+col1.metric("Nombre de clients", f"{total_clients}", delta=f"{delta_clients:+.0f}")
+col2.metric("CA moyen par client", f"{avg_revenue_per_client:,.2f} €", delta=f"{delta_avg_revenue:,.2f} €")
 col3.metric("Top client", top_client)
-col4.metric("Part du top client", f"{top_client_share:.1f}%")
+col4.metric("Part du top client", f"{top_client_share:.1f}%", delta=f"{delta_top_share:.1f}%", delta_color="inverse")
 
 # Revenue by client bar chart
 st.markdown("---")

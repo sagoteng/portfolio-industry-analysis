@@ -54,6 +54,28 @@ revenue_by_client = filtered_data.groupby('client_name')['revenue'].sum().reset_
 revenue_by_month = filtered_data.groupby(filtered_data['order_date'].dt.to_period('M'))['revenue'].sum().reset_index()
 revenue_by_month['order_date'] = revenue_by_month['order_date'].astype(str)
 
+# Calculation compare period before
+period_duration = (pd.Timestamp(end) - pd.Timestamp(start)).days
+prev_start = pd.Timestamp(start) - pd.Timedelta(days=period_duration)
+prev_end = pd.Timestamp(start) - pd.Timedelta(days=1)
+
+prev_data = data[
+    (data['order_date'] >= prev_start) &
+    (data['order_date'] <= prev_end) &
+    (data['product_family'].isin(selected_families)) &
+    (data['client_name'].isin(selected_clients))
+]
+
+prev_revenue = prev_data['revenue'].sum()
+prev_orders = len(prev_data)
+prev_otd = (prev_data['on_time'] == 'Yes').mean() * 100 if len(prev_data) > 0 else 0
+prev_nc = (prev_data['non_conformity'] == 'Yes').mean() * 100 if len(prev_data) > 0 else 0
+
+delta_revenue = total_revenue - prev_revenue
+delta_orders = total_orders - prev_orders
+delta_otd = otd_rate - prev_otd
+delta_nc = non_conformity_rate - prev_nc
+
 system_prompt = f"""Tu es un analyste de données industrielles s'adressant à la direction d'une TPE/PME. Ton ton est professionnel et orienté action.
 
 Voici les données de l'entreprise :
@@ -103,10 +125,10 @@ st.title('Analyse Industrielle')
 
 # Global KPIs
 col1, col2, col3, col4 = st.columns(4)
-col1.metric("Chiffre d'affaires", f"{total_revenue:,.2f} €")
-col2.metric("Nombre de commandes", f"{total_orders:,}")
-col3.metric("Taux OTD", f"{otd_rate:.1f}%")
-col4.metric("Taux non-conformité", f"{non_conformity_rate:.1f}%")
+col1.metric("Chiffre d'affaires", f"{total_revenue:,.2f} €", delta=f"{delta_revenue:,.2f} €")
+col2.metric("Nombre de commandes", f"{total_orders:,}", delta=f"{delta_orders:,}")
+col3.metric("Taux OTD", f"{otd_rate:.1f}%", delta=f"{delta_otd:.1f}%")
+col4.metric("Taux non-conformité", f"{non_conformity_rate:.1f}%", delta=f"{delta_nc:.1f}%", delta_color="inverse")
 
 # Revenue by month
 st.markdown("---")

@@ -56,6 +56,28 @@ otd_by_month = filtered_data.groupby(filtered_data['order_date'].dt.to_period('M
 otd_by_month.columns = ['order_date', 'otd_rate']
 otd_by_month['order_date'] = otd_by_month['order_date'].astype(str)
 
+# Calcul période précédente
+period_duration = (pd.Timestamp(end) - pd.Timestamp(start)).days
+prev_start = pd.Timestamp(start) - pd.Timedelta(days=period_duration)
+prev_end = pd.Timestamp(start) - pd.Timedelta(days=1)
+
+prev_data = data[
+    (data['order_date'] >= prev_start) &
+    (data['order_date'] <= prev_end) &
+    (data['product_family'].isin(selected_families)) &
+    (data['client_name'].isin(selected_clients))
+]
+
+prev_otd = (prev_data['on_time'] == 'Yes').mean() * 100 if len(prev_data) > 0 else 0
+prev_nc = (prev_data['non_conformity'] == 'Yes').mean() * 100 if len(prev_data) > 0 else 0
+prev_late = (prev_data['on_time'] == 'No').sum() if len(prev_data) > 0 else 0
+prev_non_conform = (prev_data['non_conformity'] == 'Yes').sum() if len(prev_data) > 0 else 0
+
+delta_otd = otd_rate - prev_otd
+delta_nc = non_conformity_rate - prev_nc
+delta_late = late_orders - prev_late
+delta_non_conform = non_conform_orders - prev_non_conform
+
 # System prompt
 system_prompt = f"""Tu es un analyste qualité s'adressant à la direction d'une TPE/PME. Ton ton est professionnel et orienté action.
 
@@ -106,10 +128,10 @@ st.title('Qualité & Livraison')
 
 # Global KPIs
 col1, col2, col3, col4 = st.columns(4)
-col1.metric("Taux OTD", f"{otd_rate:.1f}%")
-col2.metric("Taux non-conformité", f"{non_conformity_rate:.1f}%")
-col3.metric("Commandes en retard", f"{late_orders:,}")
-col4.metric("Non-conformités", f"{non_conform_orders:,}")
+col1.metric("Taux OTD", f"{otd_rate:.1f}%", delta=f"{delta_otd:.1f}%")
+col2.metric("Taux non-conformité", f"{non_conformity_rate:.1f}%", delta=f"{delta_nc:.1f}%", delta_color="inverse")
+col3.metric("Commandes en retard", f"{late_orders:,}", delta=f"{delta_late:+.0f}", delta_color="inverse")
+col4.metric("Non-conformités", f"{non_conform_orders:,}", delta=f"{delta_non_conform:+.0f}", delta_color="inverse")
 
 # OTD by month
 st.markdown("---")
