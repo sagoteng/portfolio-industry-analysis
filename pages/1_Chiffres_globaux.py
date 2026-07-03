@@ -46,6 +46,7 @@ revenue_by_client = filtered_data.groupby('client_name')['revenue'].sum().reset_
 revenue_by_month = filtered_data.groupby(filtered_data['order_date'].dt.to_period('M'))['revenue'].sum().reset_index()
 revenue_by_month['order_date'] = revenue_by_month['order_date'].astype(str)
 
+
 # Calculation compare period before
 period_duration = (pd.Timestamp(end) - pd.Timestamp(start)).days
 prev_start = pd.Timestamp(start) - pd.Timedelta(days=period_duration)
